@@ -26,13 +26,13 @@ namespace Feimos {
 		m[3][3] = t33;
 	}
 
-	Matrix4x4 Transpose(const Matrix4x4 &m) {
+	Matrix4x4 Transpose(const Matrix4x4& m) {
 		return Matrix4x4(m.m[0][0], m.m[1][0], m.m[2][0], m.m[3][0], m.m[0][1],
 			m.m[1][1], m.m[2][1], m.m[3][1], m.m[0][2], m.m[1][2],
 			m.m[2][2], m.m[3][2], m.m[0][3], m.m[1][3], m.m[2][3],
 			m.m[3][3]);
 	}
-	Matrix4x4 Inverse(const Matrix4x4 &m) {
+	Matrix4x4 Inverse(const Matrix4x4& m) {
 		int indxc[4], indxr[4];
 		int ipiv[4] = { 0, 0, 0, 0 };
 		float minv[4][4];
@@ -92,17 +92,24 @@ namespace Feimos {
 		return Matrix4x4(minv);
 	}
 
+	Transform Inverse(const Transform& t) {
+		return Transform(t.mInv, t.m);
+	}
+	Transform Transpose(const Transform& t) {
+		return Transform(Transpose(t.m), Transpose(t.mInv));
+	}
+
 	bool Transform::SwapsHandedness() const {
 		float det = m.m[0][0] * (m.m[1][1] * m.m[2][2] - m.m[1][2] * m.m[2][1]) -
 			m.m[0][1] * (m.m[1][0] * m.m[2][2] - m.m[1][2] * m.m[2][0]) +
 			m.m[0][2] * (m.m[1][0] * m.m[2][1] - m.m[1][1] * m.m[2][0]);
 		return det < 0;
 	}
-	Transform Transform::operator*(const Transform &t2) const {
+	Transform Transform::operator*(const Transform& t2) const {
 		return Transform(Matrix4x4::Mul(m, t2.m), Matrix4x4::Mul(t2.mInv, mInv));
 	}
 
-	Transform Translate(const Vector3f &delta) {
+	Transform Translate(const Vector3f& delta) {
 		Matrix4x4 m(1, 0, 0, delta.x, 0, 1, 0, delta.y, 0, 0, 1, delta.z, 0, 0, 0,
 			1);
 		Matrix4x4 minv(1, 0, 0, -delta.x, 0, 1, 0, -delta.y, 0, 0, 1, -delta.z, 0,
@@ -135,7 +142,7 @@ namespace Feimos {
 			0, 0, 0, 1);
 		return Transform(m, Transpose(m));
 	}
-	Transform Rotate(float theta, const Vector3f &axis) {
+	Transform Rotate(float theta, const Vector3f& axis) {
 		Vector3f a = Normalize(axis);
 		float sinTheta = std::sin(Radians(theta));
 		float cosTheta = std::cos(Radians(theta));
@@ -158,7 +165,7 @@ namespace Feimos {
 		m.m[2][3] = 0;
 		return Transform(m, Transpose(m));
 	}
-	Transform LookAt(const Point3f &pos, const Point3f &look, const Vector3f &up) {
+	Transform LookAt(const Point3f& pos, const Point3f& look, const Vector3f& up) {
 		Matrix4x4 cameraToWorld;
 		// Initialize fourth column of viewing matrix
 		cameraToWorld.m[0][3] = pos.x;
@@ -189,8 +196,8 @@ namespace Feimos {
 		return Transform(Inverse(cameraToWorld), cameraToWorld);
 	}
 
-	Bounds3f Transform::operator()(const Bounds3f &b) const {
-		const Transform &M = *this;
+	Bounds3f Transform::operator()(const Bounds3f& b) const {
+		const Transform& M = *this;
 		Bounds3f ret(M(Point3f(b.pMin.x, b.pMin.y, b.pMin.z)));
 		ret = Union(ret, M(Point3f(b.pMax.x, b.pMin.y, b.pMin.z)));
 		ret = Union(ret, M(Point3f(b.pMin.x, b.pMax.y, b.pMin.z)));
@@ -200,6 +207,18 @@ namespace Feimos {
 		ret = Union(ret, M(Point3f(b.pMax.x, b.pMin.y, b.pMax.z)));
 		ret = Union(ret, M(Point3f(b.pMax.x, b.pMax.y, b.pMax.z)));
 		return ret;
+	}
+	Transform Orthographic(float zNear, float zFar) {
+		return Scale(1, 1, 1 / (zFar - zNear)) * Translate(Vector3f(0, 0, -zNear));
+	}
+	Transform Perspective(float fov, float n, float f) {
+		// Perform projective divide for perspective projection
+		Matrix4x4 persp(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, f / (f - n), -f * n / (f - n),
+			0, 0, 1, 0);
+
+		// Scale canonical perspective view to specified field of view
+		float invTanAng = 1 / std::tan(Radians(fov) / 2);
+		return Scale(invTanAng, invTanAng, 1) * Transform(persp);
 	}
 
 

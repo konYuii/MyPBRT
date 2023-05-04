@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <limits>
+#include <cmath>
 
 namespace Feimos {
 
@@ -15,6 +16,11 @@ namespace Feimos {
 	static constexpr float PiOver4 = 0.78539816339744830961;
 	static constexpr float Sqrt2 = 1.41421356237309504880;
 	inline constexpr float Radians(float deg) { return (Pi / 180) * deg; }
+
+#define MachineEpsilon (std::numeric_limits<float>::epsilon() * 0.5)
+	inline float gamma(int n) {
+		return (n * MachineEpsilon) / (1 - n * MachineEpsilon);
+	}
 
 #define CHECK_NE(a,b) 
 #define DCHECK(a)
@@ -64,6 +70,22 @@ namespace Feimos {
 	class GeometricPrimitive;
 	class Aggregate;
 
+	class Camera;
+	class ProjectiveCamera;
+	class PerspectiveCamera;
+	class OrthographicCamera;
+
+	class Sampler;
+	class PixelSampler;
+	class GlobalSampler;
+	class HaltonSampler;
+	class ClockRandSampler;
+
+	class Scene;
+	class BxDF;
+	class BSDF;
+	class Material;
+
 	template <typename T>
 	inline bool isNaN(const T x) {
 		return std::isnan(x);
@@ -72,8 +94,61 @@ namespace Feimos {
 	inline bool isNaN(const int x) {
 		return false;
 	}
+	inline uint32_t FloatToBits(float f) {
+		uint32_t ui;
+		memcpy(&ui, &f, sizeof(float));
+		return ui;
+	}
 
+	inline float BitsToFloat(uint32_t ui) {
+		float f;
+		memcpy(&f, &ui, sizeof(uint32_t));
+		return f;
+	}
+	inline float NextFloatUp(float v) {
+		// Handle infinity and negative zero for _NextFloatUp()_
+		if (std::isinf(v) && v > 0.) return v;
+		if (v == -0.f) v = 0.f;
 
+		// Advance _v_ to next higher float
+		uint32_t ui = FloatToBits(v);
+		if (v >= 0)
+			++ui;
+		else
+			--ui;
+		return BitsToFloat(ui);
+	}
+	inline float NextFloatDown(float v) {
+		// Handle infinity and positive zero for _NextFloatDown()_
+		if (std::isinf(v) && v < 0.) return v;
+		if (v == 0.f) v = -0.f;
+		uint32_t ui = FloatToBits(v);
+		if (v > 0)
+			--ui;
+		else
+			++ui;
+		return BitsToFloat(ui);
+	}
+	template <typename T, typename U, typename V>
+	inline T Clamp(T val, U low, V high) {
+		if (val < low)
+			return low;
+		else if (val > high)
+			return high;
+		else
+			return val;
+	}
+	inline float Lerp(float t, float v1, float v2) { return (1 - t) * v1 + t * v2; }
+
+	template <typename T>
+	inline T Mod(T a, T b) {
+		T result = a - (a / b) * b;
+		return (T)((result < 0) ? result + b : result);
+	}
+	template <>
+	inline float Mod(float a, float b) {
+		return std::fmod(a, b);
+	}
 
 
 }

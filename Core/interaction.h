@@ -4,6 +4,7 @@
 
 #include "Core\Geometry.hpp"
 #include "Shape\Shape.h"
+#include "Material\Material.h"
 
 namespace Feimos {
 
@@ -27,9 +28,29 @@ namespace Feimos {
 	public:
 		// SurfaceInteraction Public Methods
 		SurfaceInteraction() {}
-		void ComputeScatteringFunctions();
-		const Shape* shape = nullptr;
+		SurfaceInteraction(const Point3f& p, const Vector3f& pError,
+			const Point2f& uv, const Vector3f& wo,
+			const Vector3f& dpdu, const Vector3f& dpdv,
+			const Normal3f& dndu, const Normal3f& dndv, float time,
+			const Shape* sh,
+			int faceIndex = 0);
+		~SurfaceInteraction();
+		void ComputeScatteringFunctions(
+			const Ray& ray,
+			bool allowMultipleLobes = false,
+			TransportMode mode = TransportMode::Radiance);
+
 		const Primitive* primitive = nullptr;
+		std::shared_ptr<BSDF> bsdf = nullptr;
+		Point2f uv;
+		Vector3f dpdu, dpdv;
+		Normal3f dndu, dndv;
+		const Shape* shape = nullptr;
+		struct {
+			Normal3f n;
+			Vector3f dpdu, dpdv;
+			Normal3f dndu, dndv;
+		} shading;
 	};
 
 

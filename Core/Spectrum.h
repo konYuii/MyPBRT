@@ -156,7 +156,7 @@ namespace Feimos {
 		CoefficientSpectrum Clamp(float low = 0, float high = Infinity) const {
 			CoefficientSpectrum ret;
 			for (int i = 0; i < nSpectrumSamples; ++i)
-				ret.c[i] = pbrt::Clamp(c[i], low, high);
+				ret.c[i] = Feimos::Clamp(c[i], low, high);
 			DCHECK(!ret.HasNaNs());
 			return ret;
 		}
