@@ -15,11 +15,32 @@ namespace Feimos {
 			const Vector3f& wo, float time)
 			: p(p),
 			time(time),
+			pError(pError),
 			wo(Normalize(wo)),
 			n(n) {}
+		Interaction(const Point3f& p, const Vector3f& wo, float time)
+			: p(p), time(time), wo(wo) {}
+		Interaction(const Point3f& p, float time)
+			: p(p), time(time) {}
+		Ray SpawnRay(const Vector3f& d) const {
+			Point3f o = OffsetRayOrigin(p, pError, n, d);
+			return Ray(o, d, Infinity, time);
+		}
+		Ray SpawnRayTo(const Point3f& p2) const {
+			Point3f origin = OffsetRayOrigin(p, pError, n, p2 - p);
+			Vector3f d = p2 - p;
+			return Ray(origin, d, 1 - ShadowEpsilon, time);
+		}
+		Ray SpawnRayTo(const Interaction& it) const {
+			Point3f origin = OffsetRayOrigin(p, pError, n, it.p - p);
+			Point3f target = OffsetRayOrigin(it.p, it.pError, it.n, origin - it.p);
+			Vector3f d = target - origin;
+			return Ray(origin, d, 1 - ShadowEpsilon, time);
+		}
 		// Interaction Public Data
 		Point3f p;
 		float time;
+		Vector3f pError;
 		Vector3f wo;
 		Normal3f n;
 	};

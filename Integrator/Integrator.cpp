@@ -1,13 +1,44 @@
-﻿#include "Integrator\Integrator.h"
+﻿#pragma once
+
+#include "Integrator\Integrator.h"
 #include "Sampler\Sampler.h"
+
 #include "Core\Spectrum.h"
 #include "Core\interaction.h"
 #include "Core\Scene.h"
 #include "Core\frameBuffer.h"
+
 #include "Material\Reflection.h"
+
+#include "Light\Light.h"
+
 #include <omp.h>
 
 namespace Feimos {
+
+	Spectrum SamplerIntegrator::SpecularReflect(
+		const Ray& ray, const SurfaceInteraction& isect,
+		const Scene& scene, Sampler& sampler, int depth) const {
+		// Compute specular reflection direction _wi_ and BSDF value
+		Vector3f wo = isect.wo, wi;
+		float pdf;
+		BxDFType type = BxDFType(BSDF_REFLECTION | BSDF_SPECULAR);
+		Spectrum f = isect.bsdf->Sample_f(wo, &wi, sampler.Get2D(), &pdf, type);
+
+		// Return contribution of specular reflection
+		const Normal3f& ns = isect.shading.n;
+
+		if (wi.HasNaNs()) return 1.0f;
+
+		if (pdf > 0.f && !f.IsBlack() && AbsDot(wi, ns) != 0.f) {
+			// Compute ray differential _rd_ for specular reflection
+			Ray rd = isect.SpawnRay(wi);
+			return  f * Li(rd, scene, sampler, depth + 1) * AbsDot(wi, ns) / pdf;
+		}
+		else
+			return Spectrum(0.f);
+	}
+
 
 	void SamplerIntegrator::Render(const Scene& scene, double& timeConsume) {
 
@@ -27,32 +58,18 @@ namespace Feimos {
 				float v = float(j + getClockRandom()) / float(pixelBounds.pMax.y);
 				int offset = (pixelBounds.pMax.x * j + i);
 
-				std::unique_ptr<Feimos::Sampler> pixel_sampler = sampler->Clone(offset);
+				std::unique_ptr<Feimos::Sampler> sampler_c = sampler->Clone(offset);
 				Feimos::Point2i pixel(i, j);
-				pixel_sampler->StartPixel(pixel);
+				sampler_c->StartPixel(pixel);
 
 				Feimos::CameraSample cs;
-				cs = pixel_sampler->GetCameraSample(pixel);
-				Feimos::Ray r;
-				camera->GenerateRay(cs, &r);
-
-				Feimos::SurfaceInteraction isect;
-				Feimos::Spectrum colObj(.0f);
-				if (scene.Intersect(r, &isect)) {
-					//计算散射
-					isect.ComputeScatteringFunctions(r);
-					// 对于漫反射材质来说，wo不会影响后面的结果
-					Vector3f wo = isect.wo;
-					Vector3f LightNorm = Light - isect.p;
-					LightNorm = Normalize(LightNorm);
-					Vector3f wi = LightNorm;
-					Spectrum f = isect.bsdf->f(wo, wi);
-					float pdf = isect.bsdf->Pdf(wo, wi);
+				cs = sampler_c->GetCameraSample(pixel);
+				Feimos::Ray ray;
+				camera->GenerateRay(cs, &ray);
 
 
-					//乘以3.0的意义是为了不让图像过暗
-					colObj += pdf * f * 3.0f;
-				}
+				Feimos::Spectrum colObj = Li(ray, scene, *sampler_c, 0);
+
 				m_FrameBuffer->update_f_u_c(i, j, 0, colObj[0]);
 				m_FrameBuffer->update_f_u_c(i, j, 1, colObj[1]);
 				m_FrameBuffer->update_f_u_c(i, j, 2, colObj[2]);
@@ -63,11 +80,39 @@ namespace Feimos {
 		// 计算并显示时间
 		double end = omp_get_wtime();
 		timeConsume = end - start;
-
-
-
 	}
 
 
+	Spectrum SamplerIntegrator::Li(const Ray& ray, const Scene& scene,
+		Sampler& sampler, int depth) const {
+
+		Feimos::SurfaceInteraction isect;
+
+		Feimos::Spectrum colObj;
+		if (scene.Intersect(ray, &isect)) {
+			for (int count = 0; count < scene.lights.size(); count++) {
+				VisibilityTester vist;
+				Vector3f wi;
+				Interaction p1;
+				float pdf_light;
+				Spectrum Li = scene.lights[count]->Sample_Li(isect, sampler.Get2D(), &wi, &pdf_light, &vist);
+
+				if (vist.Unoccluded(scene)) {
+					//计算散射
+					isect.ComputeScatteringFunctions(ray);
+					// 对于漫反射材质来说，wo不会影响后面的结果
+					Vector3f wo = isect.wo;
+					Spectrum f = isect.bsdf->f(wo, wi);
+					float pdf_scattering = isect.bsdf->Pdf(wo, wi);
+					colObj += Li * pdf_scattering * f * 3.0f / pdf_light;
+				}
+			}
+		}
+
+		return colObj;
+	}
 
 };
+
+
+

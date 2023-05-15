@@ -23,13 +23,15 @@ namespace Feimos {
 		virtual bool Intersect(const Ray& r, SurfaceInteraction* isect) const;
 		virtual bool IntersectP(const Ray& r) const;
 		GeometricPrimitive(const std::shared_ptr<Shape>& shape,
-			const std::shared_ptr<Material>& material);
+			const std::shared_ptr<Material>& material,
+			const std::shared_ptr<AreaLight>& areaLight);
 		virtual void ComputeScatteringFunctions(SurfaceInteraction* isect,
 			TransportMode mode,
 			bool allowMultipleLobes) const;
 	private:
 		// GeometricPrimitive Private Data
 		std::shared_ptr<Material> material;
+		std::shared_ptr<AreaLight> areaLight;
 		std::shared_ptr<Shape> shape;
 	};
 

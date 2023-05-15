@@ -3,33 +3,42 @@
 #include <QTime>
 
 #include "Core\FeimosRender.h"
+#include "Core\primitive.h"
+#include "Core\Spectrum.h"
+#include "Core\interaction.h"
+#include "Core\Scene.h"
+#include "Core\Transform.h"
+
 #include "Shape\Triangle.h"
 #include "Shape\plyRead.h"
-#include "Core\primitive.h"
+
 #include "Accelerator\BVHAccel.h"
-#include "Core\interaction.h"
-#include "Core/Spectrum.h"
 
 #include "Camera\Camera.h"
 #include "Camera\Perspective.h"
-#include "Sampler\TimeClockRandom.h"
 
 #include "Sampler\Sampler.h"
 #include "Sampler\clockRand.h"
 
 #include "Integrator\Integrator.h"
-#include "Core/Scene.h"
+#include "Integrator\WhittedIntegrator.h"
 
 #include "Material\Material.h"
 #include "Material\MatteMaterial.h"
+#include "Material\Mirror.h"
 
 #include "Texture\Texture.h"
 #include "Texture\ConstantTexture.h"
 
+#include "Light\Light.h"
+#include "Light\DiffuseLight.h"
+#include "Light\PointLight.h"
+
 #include "RenderStatus.h"
 
 
-#include <omp.h>
+
+
 
 
 RenderThread::RenderThread() {
@@ -69,13 +78,15 @@ void RenderThread::run() {
 	Feimos::Spectrum floorColor; floorColor[0] = 0.2; floorColor[1] = 0.3; floorColor[2] = 0.9;
 	Feimos::Spectrum dragonColor; dragonColor[0] = 1.0; dragonColor[1] = 1.0; dragonColor[2] = 0.0;
 	std::shared_ptr<Feimos::Texture<Feimos::Spectrum>> KdDragon = std::make_shared<Feimos::ConstantTexture<Feimos::Spectrum>>(dragonColor);
+	std::shared_ptr<Feimos::Texture<Feimos::Spectrum>> KrDragon = std::make_shared<Feimos::ConstantTexture<Feimos::Spectrum>>(dragonColor);
 	std::shared_ptr<Feimos::Texture<Feimos::Spectrum>> KdFloor = std::make_shared<Feimos::ConstantTexture<Feimos::Spectrum>>(floorColor);
 	std::shared_ptr<Feimos::Texture<float>> sigma = std::make_shared<Feimos::ConstantTexture<float>>(0.0f);
 	std::shared_ptr<Feimos::Texture<float>> bumpMap = std::make_shared<Feimos::ConstantTexture<float>>(0.0f);
 	//材质
 	std::shared_ptr<Feimos::Material> dragonMaterial = std::make_shared<Feimos::MatteMaterial>(KdDragon, sigma, bumpMap);
 	std::shared_ptr<Feimos::Material> floorMaterial = std::make_shared<Feimos::MatteMaterial>(KdFloor, sigma, bumpMap);
-
+	std::shared_ptr<Feimos::Material> whiteLightMaterial = std::make_shared<Feimos::MatteMaterial>(KdFloor, sigma, bumpMap);
+	std::shared_ptr<Feimos::Material> mirrorMaterial = std::make_shared<Feimos::MirrorMaterial>(KrDragon, bumpMap);
 
 	//地板
 	emit PrintString("Init Floor");
@@ -95,7 +106,7 @@ void RenderThread::run() {
 	for (int i = 0; i < nTrianglesFloor; ++i)
 		trisFloor.push_back(std::make_shared<Feimos::Triangle>(&floor_Object2World, &floor_World2Object, false, meshFloor, i));
 
-	// 生成Mesh加速结构
+	// 生成Mesh与加速结构
 	std::shared_ptr<Feimos::TriangleMesh> mesh;
 	std::vector<std::shared_ptr<Feimos::Shape>> tris;
 	std::vector<std::shared_ptr<Feimos::Primitive>> prims;
@@ -115,23 +126,55 @@ void RenderThread::run() {
 
 	emit PrintString("Init Primitives");
 	for (int i = 0; i < plyi.nTriangles; ++i)
-		prims.push_back(std::make_shared<Feimos::GeometricPrimitive>(tris[i], dragonMaterial));
+		prims.push_back(std::make_shared<Feimos::GeometricPrimitive>(tris[i], dragonMaterial, nullptr));
 	for (int i = 0; i < nTrianglesFloor; ++i)
-		prims.push_back(std::make_shared<Feimos::GeometricPrimitive>(trisFloor[i], floorMaterial));
+		prims.push_back(std::make_shared<Feimos::GeometricPrimitive>(trisFloor[i], mirrorMaterial, nullptr));
+
+
+
+	//面光源
+	emit PrintString("Init AreaLight");
+	// 光源
+	std::vector<std::shared_ptr<Feimos::Light>> lights;
+
+	// 定义面光源
+	int nTrianglesAreaLight = 2; //面光源数（三角形数）
+	int vertexIndicesAreaLight[6] = { 0,1,2,3,4,5 }; //面光源顶点索引
+	int nVerticesAreaLight = 6; //面光源顶点数
+	const float yPos_AreaLight = 0.0;
+	Feimos::Point3f P_AreaLight[6] = { Feimos::Point3f(-1.4,0.0,1.4), Feimos::Point3f(-1.4,0.0,-1.4), Feimos::Point3f(1.4,0.0,1.4),
+		Feimos::Point3f(1.4,0.0,1.4), Feimos::Point3f(-1.4,0.0,-1.4), Feimos::Point3f(1.4,0.0,-1.4) };
+	//面光源的变换矩阵
+	Feimos::Transform tri_Object2World_AreaLight = Feimos::Translate(Feimos::Vector3f(0.7f, 5.0f, -2.0f));
+	Feimos::Transform tri_World2Object_AreaLight = Feimos::Inverse(tri_Object2World_AreaLight);
+	//构造三角面片集
+	std::shared_ptr<Feimos::TriangleMesh> meshAreaLight = std::make_shared<Feimos::TriangleMesh>
+		(tri_Object2World_AreaLight, nTrianglesAreaLight, vertexIndicesAreaLight, nVerticesAreaLight, P_AreaLight, nullptr, nullptr, nullptr, nullptr);
+	std::vector<std::shared_ptr<Feimos::Shape>> trisAreaLight;
+	//生成三角形数组
+	for (int i = 0; i < nTrianglesAreaLight; ++i)
+		trisAreaLight.push_back(std::make_shared<Feimos::Triangle>(&tri_Object2World_AreaLight, &tri_World2Object_AreaLight, false, meshAreaLight, i));
+	//填充光源类物体到基元
+	for (int i = 0; i < nTrianglesAreaLight; ++i) {
+		std::shared_ptr<Feimos::AreaLight> area =
+			std::make_shared<Feimos::DiffuseAreaLight>(tri_Object2World_AreaLight, Feimos::Spectrum(5.f), 5, trisAreaLight[i], false);
+		lights.push_back(area);
+		prims.push_back(std::make_shared<Feimos::GeometricPrimitive>(trisAreaLight[i], whiteLightMaterial, area));
+	}
+
 
 	emit PrintString("Init Accelerator");
 	aggregate = std::make_unique<Feimos::BVHAccel>(prims, 1);
-	//emit PrintString("Finish");
 	plyi.Release();
 
 	emit PrintString("Init Sampler");
 	Feimos::Bounds2i imageBound(Feimos::Point2i(0, 0), Feimos::Point2i(WIDTH, HEIGHT));
 	std::shared_ptr<Feimos::ClockRandSampler> sampler = std::make_unique<Feimos::ClockRandSampler>(8, imageBound);
 
-	std::unique_ptr<Feimos::Scene> worldScene = std::make_unique<Feimos::Scene>(aggregate);
+	std::unique_ptr<Feimos::Scene> worldScene = std::make_unique<Feimos::Scene>(aggregate, lights);
 	Feimos::Bounds2i ScreenBound(Feimos::Point2i(0, 0), Feimos::Point2i(WIDTH, HEIGHT));
 
-	std::shared_ptr<Feimos::Integrator> integrator = std::make_shared<Feimos::SamplerIntegrator>(camera, sampler, ScreenBound, p_framebuffer);
+	std::shared_ptr<Feimos::Integrator> integrator = std::make_shared<Feimos::WhittedIntegrator>(5, camera, sampler, ScreenBound, p_framebuffer);
 
 	emit PrintString("Start Rendering");
 	// 开始执行渲染

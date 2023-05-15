@@ -28,6 +28,11 @@ namespace Feimos {
 		virtual void Preprocess(const Scene& scene, Sampler& sampler) {}
 		void Render(const Scene& scene, double& timeConsume);
 
+		virtual Spectrum Li(const Ray& ray, const Scene& scene, Sampler& sampler, int depth = 0) const;
+		Spectrum SpecularReflect(const Ray& ray,
+			const SurfaceInteraction& isect,
+			const Scene& scene, Sampler& sampler,
+			int depth) const;
 	protected:
 		// SamplerIntegrator Protected Data
 		std::shared_ptr<const Camera> camera;

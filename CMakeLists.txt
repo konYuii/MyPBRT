@@ -132,6 +132,8 @@ SOURCE_GROUP("Sampler" FILES ${Sampler})
 set(Integrator
 	Integrator/Integrator.h
 	Integrator/Integrator.cpp
+	Integrator/WhittedIntegrator.h
+	Integrator/WhittedIntegrator.cpp
 )
 # Make the Integrator group
 SOURCE_GROUP("Integrator" FILES ${Integrator})
@@ -145,6 +147,10 @@ set(Material
 	Material/Material.cpp
 	Material/MatteMaterial.h
 	Material/MatteMaterial.cpp
+	Material/Fresnel.h
+	Material/Fresnel.cpp
+	Material/Mirror.h
+	Material/Mirror.cpp
 )
 # Make the Material group
 SOURCE_GROUP("Material" FILES ${Material})
@@ -161,6 +167,19 @@ set(Texture
 SOURCE_GROUP("Texture" FILES ${Texture})
 
 
+# Light files
+set(Light
+	Light/Light.h
+	Light/Light.cpp
+	Light/PointLight.h
+	Light/PointLight.cpp
+	Light/DiffuseLight.h
+	Light/DiffuseLight.cpp
+)
+# Make the Light group
+SOURCE_GROUP("Light" FILES ${Light})
+
+
 # Create executable
 add_executable(Feimos
 	WIN32
@@ -173,6 +192,7 @@ add_executable(Feimos
 	${Integrator}
 	${Material}
 	${Texture}
+	${Light}
 )
 
 FILE(GLOB Icons ${CMAKE_CURRENT_SOURCE_DIR}/Icons/*.png)

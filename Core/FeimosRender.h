@@ -27,6 +27,8 @@ namespace Feimos {
 
 #define Infinity std::numeric_limits<float>::infinity()
 
+	static constexpr float ShadowEpsilon = 0.0001f;
+
 	template <typename T>
 	class Vector2;
 	template <typename T>
@@ -81,10 +83,14 @@ namespace Feimos {
 	class HaltonSampler;
 	class ClockRandSampler;
 
+	class Sampler;
 	class Scene;
 	class BxDF;
 	class BSDF;
 	class Material;
+	class Light;
+	class AreaLight;
+	class VisibilityTester;
 
 	template <typename T>
 	inline bool isNaN(const T x) {

@@ -1,6 +1,10 @@
-#include "Sampler/Sampling.h"
+#include "Sampler\Sampling.h"
+
 
 namespace Feimos {
+
+
+	// Sampling Function Definitions
 	void StratifiedSample1D(float* samp, int nSamples, RNG& rng, bool jitter) {
 		float invNSamples = (float)1 / nSamples;
 		for (int i = 0; i < nSamples; ++i) {
@@ -118,4 +122,13 @@ namespace Feimos {
 		float su0 = std::sqrt(u[0]);
 		return Point2f(1 - su0, u[1] * su0);
 	}
+
+
 }
+
+
+
+
+
+
+

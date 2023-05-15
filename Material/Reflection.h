@@ -7,6 +7,8 @@
 #include "Core\Spectrum.h"
 #include "Core\interaction.h"
 
+#include "Material\Fresnel.h"
+
 #include <algorithm>
 #include <string>
 
@@ -153,5 +155,26 @@ namespace Feimos {
 			if (bxdfs[i]->MatchesFlags(flags)) ++num;
 		return num;
 	}
+
+	class SpecularReflection : public BxDF {
+	public:
+		// SpecularReflection Public Methods
+		SpecularReflection(const Spectrum& R, Fresnel* fresnel)
+			: BxDF(BxDFType(BSDF_REFLECTION | BSDF_SPECULAR)),
+			R(R),
+			fresnel(fresnel) {}
+		~SpecularReflection() { fresnel->~Fresnel(); }
+		virtual Spectrum f(const Vector3f& wo, const Vector3f& wi) const {
+			return Spectrum(0.f);
+		}
+		virtual Spectrum Sample_f(const Vector3f& wo, Vector3f* wi, const Point2f& sample,
+			float* pdf, BxDFType* sampledType) const;
+		float Pdf(const Vector3f& wo, const Vector3f& wi) const { return 0; }
+
+	private:
+		// SpecularReflection Private Data
+		const Spectrum R;
+		const Fresnel* fresnel;
+	};
 }
 #endif // !__REFLECTION_H__

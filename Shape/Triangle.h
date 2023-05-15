@@ -44,6 +44,7 @@ namespace Feimos {
 			bool testAlphaTexture = true) const;
 		bool IntersectP(const Ray& ray, bool testAlphaTexture = true) const;
 		float Area() const;
+		Interaction Sample(const Point2f& u, float* pdf) const;
 	private:
 		// Triangle Private Methods
 		void GetUVs(Point2f uv[3]) const {

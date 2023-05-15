@@ -1230,6 +1230,21 @@ namespace Feimos {
 		else
 			return false;
 	}
+	inline Point3f OffsetRayOrigin(const Point3f& p, const Vector3f& pError,
+		const Normal3f& n, const Vector3f& w) {
+		float d = Dot(Abs(n), pError);
+		Vector3f offset = d * Vector3f(n);
+		if (Dot(w, n) < 0) offset = -offset;
+		Point3f po = p + offset;
+		// Round offset point _po_ away from _p_
+		for (int i = 0; i < 3; ++i) {
+			if (offset[i] > 0)
+				po[i] = NextFloatUp(po[i]);
+			else if (offset[i] < 0)
+				po[i] = NextFloatDown(po[i]);
+		}
+		return po;
+	}
 
 
 
