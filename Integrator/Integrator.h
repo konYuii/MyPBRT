@@ -17,6 +17,20 @@ namespace Feimos {
 		float IntegratorRenderTime; //渲染一次用的时间
 	};
 
+	Spectrum UniformSampleAllLights(const Interaction& it, const Scene& scene,
+		Sampler& sampler,
+		const std::vector<int>& nLightSamples,
+		bool handleMedia = false);
+	Spectrum UniformSampleOneLight(const Interaction& it, const Scene& scene,
+		Sampler& sampler,
+		bool handleMedia = false,
+		const Distribution1D* lightDistrib = nullptr);
+	Spectrum EstimateDirect(const Interaction& it, const Point2f& uShading,
+		const Light& light, const Point2f& uLight,
+		const Scene& scene, Sampler& sampler,
+		bool handleMedia = false,
+		bool specular = false);
+
 	// SamplerIntegrator Declarations
 	class SamplerIntegrator : public Integrator {
 	public:

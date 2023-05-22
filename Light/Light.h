@@ -1,6 +1,6 @@
 #pragma once
-#ifndef __LIGHT_H__
-#define __LIGHT_H__
+#ifndef __Light_h__
+#define __Light_h__
 
 #include "Core\FeimosRender.h"
 #include "Core\Transform.h"
@@ -8,6 +8,8 @@
 #include "Core\Spectrum.h"
 
 namespace Feimos {
+
+	// LightFlags Declarations
 	enum class LightFlags : int {
 		DeltaPosition = 1,
 		DeltaDirection = 2,
@@ -68,5 +70,18 @@ namespace Feimos {
 		AreaLight(const Transform& LightToWorld, int nSamples);
 		virtual Spectrum L(const Interaction& intr, const Vector3f& w) const = 0;
 	};
+
+
 }
-#endif // !__LIGHT_H__
+
+
+
+
+#endif
+
+
+
+
+
+
+

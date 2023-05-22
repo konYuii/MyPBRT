@@ -19,6 +19,7 @@ namespace Feimos {
 
 		// Scene Public Data
 		std::vector<std::shared_ptr<Light>> lights;
+		std::vector<std::shared_ptr<Light>> infiniteLights;
 	private:
 		// Scene Private Data
 		std::shared_ptr<Primitive> aggregate;

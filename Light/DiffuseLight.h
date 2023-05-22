@@ -3,6 +3,7 @@
 #define __DIFFUSELIGHT_H__
 
 #include "Light/Light.h"
+#include "MainGUI/DebugText.hpp"
 
 namespace Feimos {
 	class DiffuseAreaLight : public AreaLight {
@@ -10,8 +11,9 @@ namespace Feimos {
 		// DiffuseAreaLight Public Methods
 		DiffuseAreaLight(const Transform& LightToWorld, const Spectrum& Le,
 			int nSamples, const std::shared_ptr<Shape>& shape,
-			bool twoSided = false);
+			bool twoSided = true);
 		Spectrum L(const Interaction& intr, const Vector3f& w) const {
+
 			return (twoSided || Dot(intr.n, w) > 0) ? Lemit : Spectrum(0.f);
 		}
 		Spectrum Power() const;

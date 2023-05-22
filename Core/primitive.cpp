@@ -39,7 +39,12 @@ namespace Feimos {
 		//CHECK_GE(Dot(isect->n, isect->shading.n), 0.);
 	}
 
-
+	const AreaLight* GeometricPrimitive::GetAreaLight() const {
+		return areaLight.get();
+	}
+	const Material* GeometricPrimitive::GetMaterial() const {
+		return material.get();
+	}
 
 }
 

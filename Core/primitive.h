@@ -11,6 +11,9 @@ namespace Feimos {
 		virtual Bounds3f WorldBound() const = 0;
 		virtual bool Intersect(const Ray& r, SurfaceInteraction*) const = 0;
 		virtual bool IntersectP(const Ray& r) const = 0;
+
+		virtual const AreaLight* GetAreaLight() const = 0;
+		virtual const Material* GetMaterial() const = 0;
 		virtual void ComputeScatteringFunctions(SurfaceInteraction* isect,
 			TransportMode mode,
 			bool allowMultipleLobes) const = 0;
@@ -25,6 +28,9 @@ namespace Feimos {
 		GeometricPrimitive(const std::shared_ptr<Shape>& shape,
 			const std::shared_ptr<Material>& material,
 			const std::shared_ptr<AreaLight>& areaLight);
+
+		const AreaLight* GetAreaLight() const;
+		const Material* GetMaterial() const;
 		virtual void ComputeScatteringFunctions(SurfaceInteraction* isect,
 			TransportMode mode,
 			bool allowMultipleLobes) const;
@@ -44,6 +50,8 @@ namespace Feimos {
 			TransportMode mode,
 			bool allowMultipleLobes) const {}
 
+		const AreaLight* GetAreaLight() const { return nullptr; }
+		const Material* GetMaterial() const { return nullptr; }
 	};
 
 

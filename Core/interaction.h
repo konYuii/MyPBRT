@@ -22,6 +22,8 @@ namespace Feimos {
 			: p(p), time(time), wo(wo) {}
 		Interaction(const Point3f& p, float time)
 			: p(p), time(time) {}
+
+		bool IsSurfaceInteraction() const { return n != Normal3f(); }
 		Ray SpawnRay(const Vector3f& d) const {
 			Point3f o = OffsetRayOrigin(p, pError, n, d);
 			return Ray(o, d, Infinity, time);
@@ -60,6 +62,8 @@ namespace Feimos {
 			const Ray& ray,
 			bool allowMultipleLobes = false,
 			TransportMode mode = TransportMode::Radiance);
+
+		Spectrum Le(const Vector3f& w) const;
 
 		const Primitive* primitive = nullptr;
 		std::shared_ptr<BSDF> bsdf = nullptr;

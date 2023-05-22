@@ -92,6 +92,10 @@ namespace Feimos {
 	class AreaLight;
 	class VisibilityTester;
 
+	class Distribution1D;
+	class Distribution2D;
+	class LightDistribution;
+
 	template <typename T>
 	inline bool isNaN(const T x) {
 		return std::isnan(x);
@@ -135,6 +139,23 @@ namespace Feimos {
 			++ui;
 		return BitsToFloat(ui);
 	}
+
+	template <typename Predicate>
+	int FindInterval(int size, const Predicate& pred) {
+		int first = 0, len = size;
+		while (len > 0) {
+			int half = len >> 1, middle = first + half;
+			// Bisect range based on value of _pred_ at _middle_
+			if (pred(middle)) {
+				first = middle + 1;
+				len -= half + 1;
+			}
+			else
+				len = half;
+		}
+		return Clamp(first - 1, 0, size - 2);
+	}
+
 	template <typename T, typename U, typename V>
 	inline T Clamp(T val, U low, V high) {
 		if (val < low)

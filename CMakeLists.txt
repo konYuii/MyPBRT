@@ -20,12 +20,31 @@ find_package(Qt5 COMPONENTS
 	Gui 
 REQUIRED)
 
+find_package(OpenMP REQUIRED)
+if(OpenMP_FOUND)
+	message(STATUS "found openmp") 
+	set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS}, ${OPENMP_C_FLAGS})
+   	set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS}, ${OPENMP_CXX_FLAGS})
+else()
+   	message(FATAL_ERROR "openmp not found!")
+endif()
+
+
 # include files
 INCLUDE_DIRECTORIES(
 	${QT_INCLUDE_DIR}
 	${CMAKE_CURRENT_BINARY_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+# Third Party Library files
+set(3rdLib
+	3rdLib/stb_image.h
+	3rdLib/stb_image_write.h
+	3rdLib/stb_image_resize.h
+)
+# Make the 3rdLib group
+SOURCE_GROUP("3rdLib" FILES ${3rdLib})
 
 # Main GUI files
 set(MainGUI
@@ -134,6 +153,10 @@ set(Integrator
 	Integrator/Integrator.cpp
 	Integrator/WhittedIntegrator.h
 	Integrator/WhittedIntegrator.cpp
+	Integrator/DirectLightingIntegrator.h
+	Integrator/DirectLightingIntegrator.cpp
+	Integrator/PathIntegrator.h
+	Integrator/PathIntegrator.cpp
 )
 # Make the Integrator group
 SOURCE_GROUP("Integrator" FILES ${Integrator})
@@ -175,6 +198,10 @@ set(Light
 	Light/PointLight.cpp
 	Light/DiffuseLight.h
 	Light/DiffuseLight.cpp
+	Light/SkyBoxLight.h
+	Light/SkyBoxLight.cpp
+	Light/LightDistrib.h
+	Light/LightDistrib.cpp
 )
 # Make the Light group
 SOURCE_GROUP("Light" FILES ${Light})
@@ -183,6 +210,7 @@ SOURCE_GROUP("Light" FILES ${Light})
 # Create executable
 add_executable(Feimos
 	WIN32
+	${3rdLib}
 	${MainGUI}
 	${Core}
 	${Shape}

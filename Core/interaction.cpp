@@ -1,6 +1,7 @@
 #include "Core\interaction.h"
 #include "Core\primitive.h"
 #include "Material\Reflection.h"
+#include "Light\DiffuseLight.h"
 
 namespace Feimos {
 
@@ -44,7 +45,10 @@ namespace Feimos {
 			allowMultipleLobes);
 	}
 
-
+	Spectrum SurfaceInteraction::Le(const Vector3f& w) const {
+		const AreaLight* area = primitive->GetAreaLight();
+		return area ? area->L(*this, w) : Spectrum(0.f);
+	}
 }
 
 
